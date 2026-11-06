@@ -1,0 +1,670 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#0b0d10"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style><title>ES TPO Profile</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: terminal-style one-screen app — 26px command bar, full-bleed chart, collapsible stats strip. Single dark theme by choice. */
+:root{
+  --bg:#0b0d10;--panel:#101318;--chart:#07090b;--ink:#c8cfd7;--muted:#5d6672;--line:#1e232a;--grid:#13171c;
+  --accent:#e8a33d;--va:#3b8fd9;--va-band:rgba(59,143,217,.09);--poc-band:rgba(232,163,61,.16);
+  --on:#262d36;--on-line:#56606c;--single:#d9468a;--hi:#1a1f26;--scheme:1;
+  --f:"JetBrains Mono",ui-monospace,Menlo,monospace;--g-l:max(16px,env(safe-area-inset-left,0px));--g-r:max(16px,env(safe-area-inset-right,0px));
+  color-scheme:dark;
+}
+html{height:100%;box-sizing:border-box;background:var(--bg)}
+*,*::before,*::after{box-sizing:inherit;border-radius:0}
+body{height:100%;background:var(--bg);color:var(--ink);font-family:var(--f);font-size:11px;
+  display:flex;flex-direction:column;padding-block:0;
+  padding-left:var(--g-l);padding-right:var(--g-r);
+  -webkit-user-select:none;user-select:none;overflow:hidden}
+button,select,input,textarea{font:inherit;color:inherit}
+button{background:transparent;border:0;height:26px;padding:0 5px;cursor:pointer;color:var(--muted);letter-spacing:.04em}
+button:hover{color:var(--ink)}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:1px solid var(--va);outline-offset:-1px}
+.bar{display:flex;align-items:center;height:26px;gap:2px;flex:none}
+.bar .tag{color:var(--accent);font-weight:600;padding-right:6px}
+.bar .sep{width:1px;height:12px;background:var(--line);margin:0 3px}
+.bar .sp{flex:1}
+.ts{display:flex;align-items:center;gap:2px;color:var(--muted)}
+.ts select{-webkit-appearance:none;appearance:none;background:var(--hi);border:0;height:20px;width:42px;padding:0 4px;text-align:center;color:var(--ink);font-variant-numeric:tabular-nums}
+.seg{display:flex}
+.seg button[aria-pressed="true"]{color:var(--ink);background:var(--hi)}
+#chartWrap{flex:1;min-height:0;position:relative;background:var(--chart);
+  margin-left:calc(-1 * var(--g-l));margin-right:calc(-1 * var(--g-r));border-block:1px solid var(--line)}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+#info{flex:none;display:flex;flex-direction:column}
+.strip{display:flex;align-items:center;gap:10px;height:24px;width:100%;padding:0;color:var(--muted);text-align:left;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
+.strip b{color:var(--ink);font-weight:400}.strip .p{color:var(--accent)}.strip .v{color:var(--va)}
+.strip .chev{margin-left:auto;color:var(--muted)}
+.more{display:flex;flex-direction:column;gap:6px;padding-bottom:6px}
+.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px 10px}
+.kv{display:flex;justify-content:space-between;gap:6px;min-width:0;border-bottom:1px solid var(--grid);padding-block:2px}
+.kv span{color:var(--muted)}
+.kv b{font-weight:400;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kv.poc b{color:var(--accent)}.kv.va b{color:var(--va)}
+.ot{color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:3px 12px;color:var(--muted);font-size:10px}
+.legend i{display:inline-block;width:8px;height:8px;vertical-align:0;margin-right:4px}
+.note{color:var(--accent);font-size:10.5px}
+@media (max-width:520px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* sheets */
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.sheet>div{background:var(--panel);border-top:1px solid var(--line);width:100%;max-width:560px;max-height:88%;overflow:auto;
+  padding:12px var(--g-r) calc(14px + env(safe-area-inset-bottom,0px)) var(--g-l);
+  display:flex;flex-direction:column;gap:10px;-webkit-user-select:text;user-select:text}
+.sheet h2{margin:0;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+.sheet p,.sheet li{font-size:11px;line-height:1.5;color:var(--muted);margin:0}
+.sheet ol{margin:0;padding-left:16px;display:flex;flex-direction:column;gap:5px}
+.sheet strong{color:var(--ink);font-weight:600}
+.field{display:flex;flex-direction:column;gap:3px}
+.field label{font-size:10.5px;color:var(--muted)}
+select,input[type=number]{height:28px;border:1px solid var(--line);background:var(--chart);padding:0 6px;width:100%}
+textarea{width:100%;min-height:90px;border:1px solid var(--line);background:var(--chart);padding:6px;font-size:10.5px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sheet button{border:1px solid var(--line);height:28px;color:var(--ink)}
+.primary{background:var(--ink)!important;color:var(--bg)!important;border-color:var(--ink)!important}
+.filebtn{display:flex;align-items:center;justify-content:center;height:30px;border:1px dashed var(--line);color:var(--va);cursor:pointer}
+.filebtn input{display:none}
+.err{color:var(--single);font-size:11px}
+.btnrow{display:flex;gap:6px;flex-wrap:wrap}
+</style></head><body>
+
+<div class="bar">
+  <span class="tag">ES</span>
+  <div class="seg" id="segMode" role="group" aria-label="Вид RTH">
+    <button type="button" data-v="letters" title="Буквы">ABC</button><button type="button" data-v="blocks" title="Блоки">▮▮</button>
+  </div>
+  <span class="sep"></span>
+  <div class="seg" id="segProf" role="group" aria-label="Тип профиля">
+    <button type="button" data-v="profile" title="Профиль">PRF</button><button type="button" data-v="split" title="По 30 минут">30M</button>
+  </div>
+  <span class="sep"></span>
+  <label class="ts" for="tsSel" title="Тиксайз строки, пункты">TS<select id="tsSel"><option value="0.25">0.25</option><option value="0.5">0.5</option><option value="0.75">0.75</option><option value="1">1</option><option value="1.25">1.25</option><option value="1.5">1.5</option><option value="2">2</option><option value="2.5">2.5</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="10">10</option></select></label>
+  <span class="sp"></span>
+  <button id="zOut" type="button" aria-label="Уменьшить">−</button>
+  <button id="zIn" type="button" aria-label="Увеличить">+</button>
+  <button id="goLast" type="button" aria-label="К последнему дню">⇥</button>
+  <span class="sep"></span>
+  <button id="btnData" type="button">DATA</button>
+  <button id="btnSet" type="button" aria-label="Настройки">☰</button>
+</div>
+
+<div id="chartWrap"><canvas id="cv"></canvas></div>
+
+<section id="info" aria-live="polite"></section>
+
+<div class="sheet" id="sheetData" hidden>
+  <div>
+    <h2>Загрузка данных <button type="button" data-close>Закрыть</button></h2>
+    <div class="field"><label for="bnDays">Binance Futures · SPYUSDT (ETF SPY ×10), обновление раз в минуту</label>
+      <div class="btnrow"><select id="bnDays" style="width:auto"><option value="7">7 дней</option><option value="14">14 дней</option><option value="30" selected>30 дней</option><option value="60">60 дней</option></select>
+      <button id="btnBn" type="button" class="primary">Загрузить с Binance</button></div></div>
+    <div id="bnErr" class="err" hidden></div>
+    <label class="filebtn">Выбрать CSV-файл<input id="file" type="file" accept=".csv,.txt,text/csv,text/plain"></label>
+    <div class="field"><label for="paste">или вставьте содержимое CSV</label>
+      <textarea id="paste" placeholder="time,open,high,low,close&#10;2026-11-04T09:30:00-05:00,6851.25,6858.5,6849,6856.75"></textarea></div>
+    <div class="btnrow"><button id="btnParse" type="button" class="primary">Построить профиль</button><button id="btnDemo" type="button">Демо-данные</button></div>
+    <div id="err" class="err" hidden></div>
+    <p><strong>Формат:</strong> бары 30 минут или мельче (мелкие агрегируются в 30-минутные периоды). Колонки времени и open/high/low/close. Понимает экспорт TradingView и MetaTrader 5.</p>
+    <ol>
+      <li><strong>TradingView</strong> (с компьютера): график ES1! или CFD S&amp;P 500, таймфрейм 30m, прокрутите на нужное число дней → меню раскладки → «Экспорт данных графика». Экспорт есть не на всех тарифах. Файл перешлите на iPhone (AirDrop, Файлы, Telegram) и выберите здесь.</li>
+      <li><strong>MT5 IC Markets</strong>: Вид → Символы (Ctrl+U) → вкладка «Бары» → US500, M30, даты → «Запрос» → «Экспорт баров». Время в файле серверное — в настройках выберите «IC Markets (NY+7)».</li>
+      <li>CFD котируется от кэш-индекса, ES выше на базис. Чтобы видеть уровни ES, задайте сдвиг цены в настройках.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="sheet" id="sheetSet" hidden>
+  <div>
+    <h2>Настройки <button type="button" data-close>Готово</button></h2>
+    <div class="row2">
+      <div class="field"><label for="sRs">Тиксайз строки (пункты)</label>
+        <select id="sRs"><option value="0.25">0.25</option><option value="0.5">0.5</option><option value="0.75">0.75</option><option value="1">1</option><option value="1.25">1.25</option><option value="1.5">1.5</option><option value="2">2</option><option value="2.5">2.5</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="10">10</option></select></div>
+      <div class="field"><label for="sDays">Дней на графике</label>
+        <select id="sDays"><option value="3">3</option><option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="40">40</option><option value="0">Все</option></select></div>
+    </div>
+    <div class="field"><label for="sTz">Часовой пояс времени в файле (если в нём нет зоны)</label>
+      <select id="sTz">
+        <option value="icm">IC Markets / MT5 сервер (NY+7)</option>
+        <option value="ny">Нью-Йорк (ET)</option>
+        <option value="utc">UTC</option>
+        <option value="kyiv">Киев</option>
+      </select></div>
+    <div class="row2">
+      <div class="field"><label for="sLayout">Overnight и RTH</label>
+        <select id="sLayout"><option value="split">Отдельно</option><option value="merged">Вместе</option></select></div>
+      <div class="field"><label for="sMult">Множитель Binance SPY</label>
+        <input id="sMult" type="number" step="0.001" inputmode="decimal" value="10"></div>
+    </div>
+    <div class="field"><label for="sOff">Сдвиг цены, пункты (CFD/SPY → уровни ES)</label>
+      <input id="sOff" type="number" step="0.25" inputmode="decimal" value="0"></div>
+    <p>Тап по дате над днём переключает только этот день между «Профиль» и «По 30м».</p>
+    <p>Сессии по Нью-Йорку: overnight 18:00–9:30, RTH 9:30–16:00, периоды A–M по 30 минут. Initial Balance — A+B. Value Area 70% от POC парами строк.</p>
+  </div>
+</div>
+
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+const LS={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const LET='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const HD=26, AX=50, MIN30=18e5, DAY=864e5;
+
+/* ---------- time ---------- */
+const fmts={};
+function wallIn(ms,tz){
+  const f=fmts[tz]||(fmts[tz]=new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}));
+  const p={};for(const x of f.formatToParts(ms))p[x.type]=x.value;
+  return Date.UTC(+p.year,+p.month-1,+p.day,(+p.hour)%24,+p.minute);
+}
+function wallToInstant(w,tz){let g=w;for(let i=0;i<3;i++)g=w-(wallIn(g,tz)-g);return g}
+function parseStamp(s){
+  s=s.trim().replace(/["']/g,'');
+  if(/^\d{9,13}(\.\d+)?$/.test(s)){let n=+s;if(n<1e12)n*=1000;return{instant:n}}
+  if(/\d{4}-\d{2}-\d{2}T/.test(s)&&/([zZ]|[+-]\d{2}:?\d{2})$/.test(s)){const ms=Date.parse(s);if(!isNaN(ms))return{instant:ms}}
+  let m=s.match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})[ T]+(\d{1,2}):(\d{2})/);
+  if(m)return{wall:Date.UTC(+m[1],m[2]-1,+m[3],+m[4],+m[5])};
+  m=s.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})[ T,]+(\d{1,2}):(\d{2})/);
+  if(m)return{wall:Date.UTC(+m[3],m[2]-1,+m[1],+m[4],+m[5])};
+  return null;
+}
+function toNY(st,tz){
+  if(st.instant!=null)return wallIn(st.instant,'America/New_York');
+  if(tz==='icm')return st.wall-7*36e5;
+  if(tz==='ny')return st.wall;
+  if(tz==='utc')return wallIn(st.wall,'America/New_York');
+  return wallIn(wallToInstant(st.wall,'Europe/Kyiv'),'America/New_York');
+}
+
+/* ---------- parsing ---------- */
+function parseText(text,tz){
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if(lines.length<2)throw new Error('В данных меньше двух строк.');
+  let delim=',',best=0;
+  for(const d of ['\t',';',',']){const n=lines[0].split(d).length;if(n>best){best=n;delim=d}}
+  const clean=s=>(s||'').trim().replace(/^["'<]+|["'>]+$/g,'');
+  const head=lines[0].split(delim).map(s=>clean(s).toLowerCase());
+  const find=(...n)=>head.findIndex(h=>n.includes(h));
+  let iD=-1,iT,iO=find('open','o'),iH=find('high','h'),iL=find('low','l'),iC=find('close','c','last'),start=0;
+  if(iO>=0&&iH>=0&&iL>=0&&iC>=0){
+    start=1;
+    const dI=find('date','day'),tI=find('time','datetime','timestamp','date/time','gmt time','local time');
+    if(dI>=0&&tI>=0){iD=dI;iT=tI}else iT=tI>=0?tI:(dI>=0?dI:0);
+  }else{
+    const f=lines[0].split(delim).map(clean);
+    if(/^\d{1,2}:\d{2}/.test(f[1]||'')){iD=0;iT=1;iO=2;iH=3;iL=4;iC=5}else{iT=0;iO=1;iH=2;iL=3;iC=4}
+  }
+  const num=s=>{s=clean(s);if(delim!==',')s=s.replace(',','.');return parseFloat(s)};
+  const out=[];let skipped=0;
+  for(let i=start;i<lines.length;i++){
+    const f=lines[i].split(delim);
+    const st=parseStamp(iD>=0?clean(f[iD])+' '+clean(f[iT]):clean(f[iT]));
+    const o=num(f[iO]),h=num(f[iH]),l=num(f[iL]),c=num(f[iC]);
+    if(!st||[o,h,l,c].some(v=>!isFinite(v)||v<=0)){skipped++;continue}
+    out.push({t:toNY(st,tz),o,h:Math.max(o,h,l,c),l:Math.min(o,h,l,c),c});
+  }
+  if(!out.length)throw new Error('Не нашёл строк с временем и OHLC. Нужны колонки time, open, high, low, close (экспорт TradingView) или <DATE> <TIME> <OPEN>… (MT5).');
+  return {bars:out,skipped};
+}
+function to30(bars){
+  bars.sort((a,b)=>a.t-b.t);
+  const diffs=[];for(let i=1;i<Math.min(bars.length,600);i++){const d=bars[i].t-bars[i-1].t;if(d>0)diffs.push(d)}
+  diffs.sort((a,b)=>a-b);
+  const tf=diffs.length?diffs[Math.floor(diffs.length/2)]/6e4:30;
+  const out=[];let cur=null;
+  for(const b of bars){const k=Math.floor(b.t/MIN30)*MIN30;
+    if(!cur||cur.t!==k){cur={t:k,o:b.o,h:b.h,l:b.l,c:b.c};out.push(cur)}
+    else{cur.h=Math.max(cur.h,b.h);cur.l=Math.min(cur.l,b.l);cur.c=b.c}}
+  return{bars:out,tf};
+}
+
+/* ---------- profiles ---------- */
+function prof(bs,rs){
+  if(!bs.length)return null;
+  bs.sort((a,b)=>a.i-b.i);
+  const rowOf=p=>Math.floor(p/rs+1e-7);
+  const rows=new Map();let mn=Infinity,mx=-Infinity,hi=-Infinity,lo=Infinity;
+  for(const b of bs){const a=rowOf(b.l),z=rowOf(b.h);if(z-a>3000)continue;
+    hi=Math.max(hi,b.h);lo=Math.min(lo,b.l);
+    for(let r=a;r<=z;r++){let x=rows.get(r);if(!x){x=[];rows.set(r,x)}x.push(b.i)}
+    mn=Math.min(mn,a);mx=Math.max(mx,z)}
+  if(!rows.size)return null;
+  const cnt=r=>(rows.get(r)||[]).length;
+  let maxC=0,poc=mn,total=0;const mid=(mn+mx)/2;
+  for(let r=mn;r<=mx;r++){const c=cnt(r);total+=c;if(c>maxC||(c===maxC&&Math.abs(r-mid)<Math.abs(poc-mid))){maxC=c;poc=r}}
+  const pair=(from,dir,lim)=>{let s=0,n=0;for(let k=1;k<=2;k++){const r=from+dir*k;if(dir>0?r>lim:r<lim)break;s+=cnt(r);n++}return n?{s,n}:null};
+  let up=poc,dn=poc,acc=maxC;const tgt=total*.7;
+  while(acc<tgt){const A=pair(up,1,mx),B=pair(dn,-1,mn);if(!A&&!B)break;
+    if(A&&(!B||A.s>=B.s)){up+=A.n;acc+=A.s}else{dn-=B.n;acc+=B.s}}
+  return{rows,mn,mx,poc,vah:up,val:dn,maxC,total,hi,lo,open:bs[0].o,close:bs[bs.length-1].c,n:bs.length,rowOf,bars:bs,maxI:bs[bs.length-1].i,firstI:bs[0].i,openRow:rowOf(bs[0].o),closeRow:rowOf(bs[bs.length-1].c)};
+}
+function buildDays(bars,rs,off){
+  const map=new Map();
+  for(const b of bars){
+    const d=new Date(b.t),mod=d.getUTCHours()*60+d.getUTCMinutes(),wdw=d.getUTCDay();
+    if(wdw===6||(wdw===5&&mod>=1020)||(wdw===0&&mod<1080))continue;
+    let day=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()),ses,idx;
+    if(mod>=1080){ses='on';idx=(mod-1080)/30;day+=DAY}
+    else if(mod<570){ses='on';idx=(mod+360)/30}
+    else if(mod<960){ses='rth';idx=(mod-570)/30}
+    else continue;
+    const wd=new Date(day).getUTCDay();if(wd===6)day+=2*DAY;else if(wd===0)day+=DAY;
+    let e=map.get(day);if(!e){e={key:day,onB:[],rthB:[]};map.set(day,e)}
+    (ses==='on'?e.onB:e.rthB).push({i:Math.floor(idx),o:b.o+off,h:b.h+off,l:b.l+off,c:b.c+off,t:b.t});
+  }
+  const days=[...map.values()].sort((a,b)=>a.key-b.key);
+  for(const d of days){
+    d.on=prof(d.onB,rs);d.rth=prof(d.rthB,rs);
+    const ib=d.rthB.filter(b=>b.i<=1);
+    if(ib.length){d.ibH=Math.max(...ib.map(b=>b.h));d.ibL=Math.min(...ib.map(b=>b.l))}
+  }
+  return days.filter(d=>d.on||d.rth);
+}
+
+/* ---------- demo ---------- */
+function demoBars(){
+  let s=20261105;const rnd=()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+  const g=()=>{let u=0;for(let i=0;i<6;i++)u+=rnd();return u-3};
+  const q=v=>Math.round(v*4)/4;
+  const now=wallIn(Date.now(),'America/New_York');
+  let d=Date.UTC(new Date(now).getUTCFullYear(),new Date(now).getUTCMonth(),new Date(now).getUTCDate())-DAY;
+  const days=[];while(days.length<6){const wd=new Date(d).getUTCDay();if(wd>0&&wd<6)days.unshift(d);d-=DAY}
+  let p=6840;const out=[];
+  for(const D of days){
+    const prev=new Date(D-DAY).getUTCDay()===0?D-DAY:D-DAY;
+    const times=[];for(let m=1080;m<1440;m+=30)times.push(prev+m*6e4);
+    for(let m=0;m<570;m+=30)times.push(D+m*6e4);
+    for(let m=570;m<960;m+=30)times.push(D+m*6e4);
+    const bias=g()*1.2;
+    for(const t of times){
+      const mod=new Date(t).getUTCHours()*60+new Date(t).getUTCMinutes();
+      const rth=mod>=570&&mod<960,sig=rth?(mod<630?7:4.5):2.2;
+      const o=p,c=q(o+g()*sig+(rth?bias:bias*.2));
+      const h=q(Math.max(o,c)+Math.abs(g())*sig*.6),l=q(Math.min(o,c)-Math.abs(g())*sig*.6);
+      out.push({t,o,h,l,c});p=c;
+    }
+  }
+  return out;
+}
+
+/* ---------- state ---------- */
+const S={bars:[],raw:null,demo:true,src:'',srcType:'demo',bn:null,tf:30,skipped:0,days:[],sel:-1,selRow:null,ov:{},
+  set:{rs:1,days:10,tz:'icm',off:0,mode:'letters',layout:'split',prof:'profile',bnMult:10,bnDays:30},
+  view:{x:0,top:0,rowH:12},U:10,UO:5,totalW:0};
+try{Object.assign(S.set,JSON.parse(LS.get('tpo.set')||'{}'))}catch(e){}
+const saveSet=()=>LS.set('tpo.set',JSON.stringify(S.set));
+
+/* ---------- canvas ---------- */
+const cv=$('#cv'),ctx=cv.getContext('2d'),wrap=$('#chartWrap');
+let cw=300,ch=300,dpr=1,C={},perB=[],perT=[];
+function readColors(){
+  const cs=getComputedStyle(document.documentElement),g=n=>cs.getPropertyValue('--'+n).trim();
+  for(const n of['chart','panel','ink','muted','line','grid','accent','va','va-band','poc-band','on','on-line','single'])C[n]=g(n);
+  const dark=g('scheme')==='1';
+  perB=[];perT=[];
+  C.lt='rgba(226,234,243,.9)';C.onva='#3b4756';C.op='hsl(150 45% 38%)';C.cl='hsl(4 55% 47%)';
+  for(let i=0;i<26;i++){const t=Math.min(i,12)/12;
+    perB.push(`hsl(216 22% ${22+t*12}%)`);perT.push(`hsl(211 58% ${34+t*12}%)`)}
+}
+function size(){
+  const r=wrap.getBoundingClientRect();cw=Math.max(50,r.width);ch=Math.max(50,r.height);
+  dpr=Math.min(window.devicePixelRatio||1,3);cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr);
+}
+function layout(){
+  const rh=S.view.rowH,U=Math.max(7,Math.min(22,rh*.95)),UO=Math.max(2.5,U*.48);S.U=U;S.UO=UO;
+  const merged=S.set.layout==='merged';let x=16;
+  for(const d of S.days){
+    d.x=x;d.sp=isSplit(d);
+    if(d.sp){
+      d.onW=d.on?(d.on.maxI+1)*UO:0;d.rthW=d.rth?(d.rth.maxI+1)*U:0;
+      d.onX=x+(merged?14:0);d.rthX=d.onX+d.onW+(d.onW?(merged?2:20):14);
+      d.w=Math.max(d.rthX-x+d.rthW,70);x+=d.w+30;continue;
+    }
+    d.onW=d.on?d.on.maxC*UO:0;d.rthW=d.rth?d.rth.maxC*U:0;
+    if(merged){
+      let w=0;const mn=Math.min(d.on?.mn??Infinity,d.rth?.mn??Infinity),mx=Math.max(d.on?.mx??-Infinity,d.rth?.mx??-Infinity);
+      for(let r=mn;r<=mx;r++){const a=d.on?.rows.get(r)?.length||0,b=d.rth?.rows.get(r)?.length||0;w=Math.max(w,a*UO+(a&&b?3:0)+b*U)}
+      d.colX=x+14;d.mW=w;d.w=Math.max(w+14,70);
+    }else{
+      d.onX=x;d.rthX=x+d.onW+(d.onW?20:14);d.w=Math.max(d.rthX-x+d.rthW,70);
+    }
+    x+=d.w+30;
+  }
+  S.totalW=x;
+}
+const yTop=r=>HD+(S.view.top-r-1)*S.view.rowH;
+let pending=false;const req=()=>{if(!pending){pending=true;requestAnimationFrame(()=>{pending=false;draw()})}};
+
+function draw(){
+  const rh=S.view.rowH,pw=cw-AX,vx=S.view.x;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.fillStyle=C.chart;ctx.fillRect(0,0,cw,ch);
+  if(!S.days.length){ctx.fillStyle=C.muted;ctx.font='13px '+getComputedStyle(document.body).fontFamily;ctx.textAlign='center';
+    ctx.fillText('Нет сессий в данных — загрузите CSV в «Данные»',cw/2,ch/2);return}
+  const rTop=Math.ceil(S.view.top)+1,rBot=Math.floor(S.view.top-(ch-HD)/rh)-1;
+  const rs=S.set.rs,pxPt=rh/rs;
+  const steps=[.25,.5,1,2,2.5,5,10,20,25,50,100,200,250,500,1000];
+  const step=steps.find(s=>s>=rs-1e-9&&Math.abs(s/rs-Math.round(s/rs))<1e-6&&s*pxPt>=22)||2000;
+  const dec=step%1?2:0;
+  const labels=[];for(let p=Math.ceil(rBot*rs/step)*step;p<=rTop*rs;p+=step){const r=Math.round(p/rs);labels.push([p,yTop(r)+rh/2])}
+  ctx.save();ctx.beginPath();ctx.rect(0,HD,pw,ch-HD);ctx.clip();
+  ctx.strokeStyle=C.grid;ctx.lineWidth=1;ctx.beginPath();
+  for(const[,y]of labels){ctx.moveTo(0,Math.round(y)+.5);ctx.lineTo(pw,Math.round(y)+.5)}ctx.stroke();
+  for(let i=0;i<S.days.length;i++){const d=S.days[i];const nx=S.days[i+1];if(d.x-vx>pw||(nx?nx.x+nx.w:Infinity)-vx<0)continue;drawDay(d,i,rTop,rBot)}
+  if(S.selRow!=null){const y=yTop(S.selRow)+rh/2;ctx.strokeStyle=C.accent;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(pw,y);ctx.stroke();ctx.setLineDash([])}
+  ctx.restore();
+  // header
+  ctx.save();ctx.beginPath();ctx.rect(0,0,pw,HD);ctx.clip();
+  ctx.fillStyle=C.chart;ctx.fillRect(0,0,pw,HD);
+  ctx.strokeStyle=C.line;ctx.beginPath();ctx.moveTo(0,HD-.5);ctx.lineTo(pw,HD-.5);ctx.stroke();
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  for(let i=0;i<S.days.length;i++){const d=S.days[i],x0=d.x-vx;if(x0>pw||x0+d.w<0)continue;
+    const sel=i===S.sel;ctx.font='10px "JetBrains Mono",monospace';
+    ctx.fillStyle=sel?C.accent:C.ink;ctx.fillText(dayLabel(d.key),x0+d.w/2,11);
+    ctx.font='8px "JetBrains Mono",monospace';ctx.fillStyle=C.muted;
+    if(S.set.layout==='split'||d.sp){if(d.on)ctx.fillText('ON',d.onX-vx+d.onW/2,22);if(d.rth)ctx.fillText('RTH',d.rthX-vx+d.rthW/2,22)}
+    else ctx.fillText('ON+RTH',x0+d.w/2,22);
+    }
+  ctx.restore();
+  // axis
+  ctx.fillStyle=C.panel;ctx.fillRect(pw,0,AX,ch);
+  ctx.strokeStyle=C.line;ctx.beginPath();ctx.moveTo(pw+.5,0);ctx.lineTo(pw+.5,ch);ctx.stroke();
+  ctx.font='10px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle=C.muted;
+  for(const[p,y]of labels)if(y>HD+6&&y<ch-4)ctx.fillText(p.toFixed(dec),pw+6,y);
+  const last=lastClose();
+  if(last!=null){const y=yTop(Math.floor(last/rs+1e-7))+rh/2;axisTag(y,last.toFixed(2),C.ink,C.chart)}
+  if(S.selRow!=null){const y=yTop(S.selRow)+rh/2;axisTag(y,(S.selRow*rs).toFixed(rs%1?2:0),C.accent,C.chart)}
+}
+function axisTag(y,t,bg,fg){if(y<HD||y>ch)return;const pw=cw-AX;ctx.fillStyle=bg;ctx.fillRect(pw+1,y-8,AX-1,16);ctx.fillStyle=fg;ctx.textAlign='left';ctx.fillText(t,pw+5,y+.5)}
+function lastClose(){const d=S.days[S.days.length-1];if(!d)return null;const b=d.rthB.length?d.rthB:d.onB;return b.length?b.reduce((a,x)=>x.t>a.t?x:a).c:null}
+
+const isSplit=d=>S.ov[d.key]!=null?S.ov[d.key]:S.set.prof==='split';
+function cellCol(pf,p,r,va,out){
+  if(p===pf.firstI&&r===pf.openRow)return C.op;
+  if(p===pf.maxI&&r===pf.closeRow)return C.cl;
+  return r>=pf.val&&r<=pf.vah?va:out;
+}
+function drawLevels(d,idx,x1){
+  const rt=d.rth;if(!rt)return;const rh=S.view.rowH,vx=S.view.x,pw=cw-AX,nx=S.days[idx+1];
+  const x2=nx?nx.x+nx.w-vx:pw;
+  const lines=[[Math.round(yTop(rt.vah))+.5,C.va,[2,2],'VAH'],[Math.round(yTop(rt.poc)+rh/2)+.5,C.accent,[],'POC'],[Math.round(yTop(rt.val)+rh)-.5,C.va,[2,2],'VAL']];
+  ctx.lineWidth=1;ctx.font='8px "JetBrains Mono",monospace';ctx.textAlign='right';ctx.textBaseline='bottom';
+  for(const[y,c,dash,t]of lines){ctx.strokeStyle=c;ctx.setLineDash(dash);ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x2,y);ctx.stroke();
+    ctx.fillStyle=c;ctx.fillText(t,Math.min(x2,pw)-3,y-1)}
+  ctx.setLineDash([]);
+}
+function drawSplit(d,idx,rTop,rBot){
+  const rh=S.view.rowH,U=S.U,UO=S.UO,vx=S.view.x;
+  const letters=S.set.mode==='letters'&&rh>=9,gap=rh>=6?1:0,on=d.on,rt=d.rth,base=d.rthX-vx;
+  drawLevels(d,idx,base-9);
+  if(rt){
+
+  }
+  if(on){
+    const x1=d.onX-vx,x2=(rt?d.rthX+d.rthW:d.onX+d.onW)-vx+4;
+    ctx.strokeStyle=C['on-line'];ctx.setLineDash([3,3]);ctx.lineWidth=1;ctx.beginPath();
+    const yh=Math.round(yTop(on.mx))+.5,yl=Math.round(yTop(on.mn)+rh)-.5;
+    ctx.moveTo(x1,yh);ctx.lineTo(x2,yh);ctx.moveTo(x1,yl);ctx.lineTo(x2,yl);ctx.stroke();ctx.setLineDash([]);
+    ctx.font='8px "JetBrains Mono",monospace';ctx.fillStyle=C['on-line'];ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText('ONH',x2+2,yh);ctx.fillText('ONL',x2+2,yl);
+    for(const b of on.bars){const a=Math.max(on.rowOf(b.l),rBot),z=Math.min(on.rowOf(b.h),rTop);if(a>z)continue;
+      for(let r=a;r<=z;r++){ctx.fillStyle=cellCol(on,b.i,r,C.onva,C.on);ctx.fillRect(x1+b.i*UO,yTop(r)+gap*.5,Math.max(1,UO-gap),rh-gap)}}
+  }
+  if(rt){
+    if(letters){ctx.font=`600 ${Math.round(Math.min(rh*.8,U*.98))}px "JetBrains Mono",monospace`;ctx.textAlign='center';ctx.textBaseline='middle'}
+    for(const b of rt.bars){const a=Math.max(rt.rowOf(b.l),rBot),z=Math.min(rt.rowOf(b.h),rTop);if(a>z)continue;const x=base+b.i*U;
+      for(let r=a;r<=z;r++){ctx.fillStyle=cellCol(rt,b.i,r,perT[b.i],perB[b.i]);ctx.fillRect(x,yTop(r)+gap*.5,U-gap,rh-gap)}
+      if(letters){ctx.fillStyle=C.lt;for(let r=a;r<=z;r++)ctx.fillText(LET[b.i],x+(U-gap)/2,yTop(r)+rh/2+.5)}}
+    ctx.fillStyle=C.va;ctx.fillRect(base-9,yTop(rt.vah),2,(rt.vah-rt.val+1)*rh);
+    if(d.ibH!=null){const a=rt.rowOf(d.ibH),b=rt.rowOf(d.ibL);ctx.fillStyle=C.ink;ctx.fillRect(base-5,yTop(a),3,(a-b+1)*rh)}
+  }
+}
+function drawDay(d,idx,rTop,rBot){
+  if(d.sp)return drawSplit(d,idx,rTop,rBot);
+  const rh=S.view.rowH,U=S.U,UO=S.UO,vx=S.view.x,rs=S.set.rs;
+  const merged=S.set.layout==='merged',letters=S.set.mode==='letters'&&rh>=9;
+  const on=d.on,rt=d.rth;
+  const base=(merged?d.colX:d.rthX)-vx;
+  const rtWidth=merged?d.mW:d.rthW;
+  const gap=rh>=6?1:0;
+  drawLevels(d,idx,base-9);
+  // RTH bands
+  if(rt){
+
+  }
+  // ON hi/lo
+  if(on){
+    const x1=(merged?d.colX:d.onX)-vx,x2=x1+(merged?d.mW:(rt?d.rthX+d.rthW-d.onX:d.onW))+4;
+    ctx.strokeStyle=C['on-line'];ctx.setLineDash([3,3]);ctx.lineWidth=1;ctx.beginPath();
+    const yh=Math.round(yTop(on.mx))+.5,yl=Math.round(yTop(on.mn)+rh)-.5;
+    ctx.moveTo(x1,yh);ctx.lineTo(x2,yh);ctx.moveTo(x1,yl);ctx.lineTo(x2,yl);ctx.stroke();ctx.setLineDash([]);
+    ctx.font='8px "JetBrains Mono",monospace';ctx.fillStyle=C['on-line'];ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText('ONH',x2+2,yh);ctx.fillText('ONL',x2+2,yl);
+    if(!merged){ctx.strokeStyle=C.accent;ctx.lineWidth=1;ctx.strokeRect(d.onX-vx-1.5,yTop(on.poc)+.5,on.rows.get(on.poc).length*UO+2,rh-1)}
+  }
+  // cells
+  const lo=Math.max(rBot,Math.min(on?.mn??Infinity,rt?.mn??Infinity)),hi=Math.min(rTop,Math.max(on?.mx??-Infinity,rt?.mx??-Infinity));
+  if(letters){ctx.font=`600 ${Math.round(Math.min(rh*.8,U*.98))}px "JetBrains Mono",monospace`;ctx.textAlign='center';ctx.textBaseline='middle'}
+  for(let r=lo;r<=hi;r++){
+    const y=yTop(r),oa=on?.rows.get(r)||[],ra=rt?.rows.get(r)||[];
+    const ox=(merged?d.colX:d.onX)-vx;
+    if(oa.length){for(let k=0;k<oa.length;k++){ctx.fillStyle=cellCol(on,oa[k],r,C.onva,C.on);ctx.fillRect(ox+k*UO,y+gap*.5,Math.max(1,UO-gap),rh-gap)}}
+    const rx=merged?ox+oa.length*UO+(oa.length&&ra.length?3:0):base;
+    for(let k=0;k<ra.length;k++){const p=ra[k];
+      ctx.fillStyle=cellCol(rt,p,r,perT[p],perB[p]);ctx.fillRect(rx+k*U,y+gap*.5,U-gap,rh-gap);
+      if(letters){ctx.fillStyle=C.lt;ctx.fillText(LET[p],rx+k*U+(U-gap)/2,y+rh/2+.5)}}
+    if(ra.length===1){ctx.fillStyle=C.single;ctx.fillRect(rx+U+2,y+1,2,rh-2)}
+  }
+  // markers
+  if(rt){
+    ctx.fillStyle=C.va;ctx.fillRect(base-9,yTop(rt.vah),2,(rt.vah-rt.val+1)*rh);
+    if(d.ibH!=null){const a=rt.rowOf(d.ibH),b=rt.rowOf(d.ibL);ctx.fillStyle=C.ink;ctx.fillRect(base-5,yTop(a),3,(a-b+1)*rh)}
+  }
+}
+const WD=['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],WDF=['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+const p2=n=>String(n).padStart(2,'0');
+function dayLabel(k){const d=new Date(k);return`${WD[d.getUTCDay()]} ${p2(d.getUTCDate())}.${p2(d.getUTCMonth()+1)}`}
+
+/* ---------- info ---------- */
+let infoOpen=LS.get('tpo.info')==='1';
+function srcLabel(){
+  if(S.demo)return'ДЕМО';
+  if(S.srcType==='binance'){const t=S.bnUpd?new Date(S.bnUpd):null;return`BINANCE SPY×${S.set.bnMult}${t?' '+p2(t.getHours())+':'+p2(t.getMinutes()):''}`}
+  return (S.src||'CSV').toUpperCase().slice(0,18);
+}
+function renderInfo(){
+  const el=$('#info'),d=S.days[S.sel];
+  if(!d){el.innerHTML=`<div class="strip">${srcLabel()} · нет сессий</div>`;return}
+  const rs=S.set.rs,f=v=>v==null||!isFinite(v)?'—':v.toFixed(2),g=v=>v==null||!isFinite(v)?'—':(+v.toFixed(2)).toString(),on=d.on,rt=d.rth;
+  const prev=S.days.slice(0,S.sel).reverse().find(x=>x.rth);
+  let openType='';
+  if(rt&&prev){const o=rt.open,p=prev.rth;
+    openType=o>p.hi?'Open выше вчерашнего диапазона':o<p.lo?'Open ниже вчерашнего диапазона':o>(p.vah+1)*rs?'Open выше вчерашней VA':o<p.val*rs?'Open ниже вчерашней VA':'Open внутри вчерашней VA';
+    if(on)openType+=o>on.hi?', выше ON':o<on.lo?', ниже ON':', внутри ON';}
+  const dt=new Date(d.key),partial=S.sel===S.days.length-1&&(!rt||rt.n<13);
+  const strip=`<button type="button" class="strip" id="infoTog" aria-expanded="${infoOpen}">
+    <b>${dayLabel(d.key)}</b>${rt?`<span class="v">${g(rt.vah*rs)}</span><span class="p">${g(rt.poc*rs)}</span><span class="v">${g(rt.val*rs)}</span>`:''}
+    ${d.ibH!=null?`<span>IB ${g(d.ibH-d.ibL)}</span>`:''}<span>${srcLabel()}</span><span class="chev">${infoOpen?'▾':'▴'}</span></button>`;
+  if(!infoOpen){el.innerHTML=strip;return}
+  const kv=(k,v,c='')=>`<div class="kv ${c}"><span>${k}</span><b>${v}</b></div>`;
+  const items=[kv('ONH',f(on?.hi)),kv('ONL',f(on?.lo)),kv('ON POC',on?f(on.poc*rs):'—','poc'),
+    kv('VAH',rt?f(rt.vah*rs):'—','va'),kv('POC',rt?f(rt.poc*rs):'—','poc'),kv('VAL',rt?f(rt.val*rs):'—','va'),
+    kv('IBH',f(d.ibH)),kv('IBL',f(d.ibL)),kv('IB',d.ibH!=null?f(d.ibH-d.ibL):'—'),
+    kv('Open',f(rt?.open)),kv('High',f(rt?.hi)),kv('Low',f(rt?.lo)),
+    kv(partial?'Last':'Close',f(rt?.close)),kv('Range',rt?f(rt.hi-rt.lo):'—'),kv('TPO',rt?rt.total:'—')];
+  el.innerHTML=strip+`<div class="more">
+  <div class="ot">${WDF[dt.getUTCDay()]} ${p2(dt.getUTCDate())}.${p2(dt.getUTCMonth()+1)}.${dt.getUTCFullYear()}${partial?' · идёт':''}${openType?' · '+openType:''}</div>
+  <div class="grid">${items.join('')}</div>
+  <div class="legend"><span><i style="background:hsl(211 58% 42%)"></i>VA 70%</span><span><i style="background:hsl(216 22% 28%)"></i>Вне VA</span><span><i style="background:var(--accent)"></i>POC</span><span><i style="background:var(--ink);width:3px"></i>IB</span><span><i style="background:hsl(150 45% 38%)"></i>Open</span><span><i style="background:hsl(4 55% 47%)"></i>Close</span><span><i style="background:var(--single);width:2px"></i>Single</span><span><i style="background:#3b4756"></i>ON VA</span><span><i style="background:var(--on)"></i>ON</span></div>
+  ${S.demo?'<div class="note">Синтетические демо-данные. Свои — через DATA.</div>':''}
+  ${!S.demo&&S.tf>30?`<div class="note">Бары ~${Math.round(S.tf)} мин. Для TPO нужны 30м или мельче.</div>`:''}</div>`;
+}
+document.addEventListener('click',e=>{if(e.target.closest('#infoTog')){infoOpen=!infoOpen;LS.set('tpo.info',infoOpen?'1':'0');renderInfo()}});
+function renderSrc(){renderInfo()}
+let buildDaysCached=0;
+
+/* ---------- build ---------- */
+function rebuild(fit,keep){
+  const wasLast=S.sel===S.days.length-1,oldKey=S.days[S.sel]?.key;
+  const all=buildDays(S.bars,S.set.rs,S.set.off);buildDaysCached=all.length;
+  S.days=S.set.days>0?all.slice(-S.set.days):all;
+  if(keep&&!wasLast){const i=S.days.findIndex(d=>d.key===oldKey);S.sel=i>=0?i:S.days.length-1}
+  else{S.sel=S.days.length-1}
+  if(!keep)S.selRow=null;
+  const ox=S.view.x,ot=S.totalW;
+  layout();if(fit)fitLast();else if(keep)S.view.x=ox;
+  renderInfo();renderSrc();req();
+}
+
+/* ---------- Binance SPYUSDT ---------- */
+const BN='https://fapi.binance.com/fapi/v1/klines?symbol=SPYUSDT&interval=30m';
+async function bnFetch(start,end){
+  const out=[];let s=start;
+  for(let i=0;i<12&&s<end;i++){
+    const r=await fetch(`${BN}&startTime=${s}&limit=1500`);
+    if(!r.ok){let m='';try{m=(await r.json()).msg||''}catch(e){}throw new Error(`Binance ответил ${r.status}${m?': '+m:''}`)}
+    const a=await r.json();if(!Array.isArray(a)||!a.length)break;
+    for(const k of a)out.push({ms:+k[0],o:+k[1],h:+k[2],l:+k[3],c:+k[4]});
+    if(a.length<1500)break;s=+a[a.length-1][0]+MIN30;
+  }
+  return out;
+}
+function bnApply(fit,keep){
+  const m=S.set.bnMult||10;
+  S.bars=S.bn.map(k=>({t:wallIn(k.ms,'America/New_York'),o:k.o*m,h:k.h*m,l:k.l*m,c:k.c*m}));
+  S.tf=30;rebuild(fit,keep);
+}
+async function loadBinance(days){
+  const now=Date.now(),k=await bnFetch(now-(days+1)*DAY,now);
+  if(!k.length)throw new Error('Binance вернул пустой список. Возможно, символ SPYUSDT переименован или снят с торгов.');
+  S.bn=k;S.bnUpd=now;S.srcType='binance';S.demo=false;S.raw=null;S.src='Binance';
+  LS.set('tpo.srcType','binance');LS.del('tpo.raw');
+  bnApply(true,false);startLive();
+}
+let liveTimer=null;
+function startLive(){clearInterval(liveTimer);liveTimer=setInterval(async()=>{
+  if(S.srcType!=='binance'||document.hidden||!S.bn?.length)return;
+  try{const last=S.bn[S.bn.length-1].ms,k=await bnFetch(last,Date.now());
+    const map=new Map(S.bn.map(x=>[x.ms,x]));for(const x of k)map.set(x.ms,x);
+    S.bn=[...map.values()].sort((a,b)=>a.ms-b.ms);S.bnUpd=Date.now();bnApply(false,true);
+  }catch(e){}},60000)}
+const bnErrMsg=e=>e instanceof TypeError?'Не удалось связаться с Binance. Внутри Claude страница не может обращаться к внешним сайтам — нужна версия с хостинга. Если это уже она, проверь, открывается ли Binance из твоей сети.':e.message;
+function keepView(fn){
+  const pw=cw-AX,cx=pw/2,rs0=S.set.rs,pxPt=S.view.rowH/rs0,topP=(S.view.top-1)*rs0,c=S.view.x+cx;
+  let anc=null;for(const d of S.days){if(c<d.x+d.w+30){anc={key:d.key,off:(c-d.x)/(d.w+30)};break}}
+  fn();
+  const rs=S.set.rs;S.view.rowH=Math.max(3,Math.min(40,pxPt*rs));S.view.top=topP/rs+1;layout();
+  const d=anc&&S.days.find(x=>x.key===anc.key);
+  if(d)S.view.x=d.x+anc.off*(d.w+30)-cx;else S.view.x=Math.min(S.view.x,S.totalW-pw/2);
+  req();
+}
+function fitLast(){
+  const d=S.days[S.days.length-1];if(!d)return;
+  const p=d.rth||d.on,n=p.mx-p.mn+1,ph=ch-HD;
+  let rh=(ph-24)/(n*1.12);rh=Math.max(S.set.mode==='letters'?10:5,Math.min(20,rh));
+  S.view.rowH=rh;layout();
+  S.view.top=p.mx+1+(ph-n*rh)/(2*rh);
+  S.view.x=d.x+d.w-(cw-AX-34);
+}
+function loadRaw(text,name,fit=true){
+  const {bars,skipped}=parseText(text,S.set.tz);const a=to30(bars);
+  S.bars=a.bars;S.tf=a.tf;S.skipped=skipped;S.raw=text;S.demo=false;S.src=name||'CSV';S.srcType='csv';clearInterval(liveTimer);
+  if(text.length<4e6){LS.set('tpo.raw',text);LS.set('tpo.src',S.src);LS.set('tpo.srcType','csv')}
+  rebuild(fit,!fit);
+}
+function loadDemo(){S.bars=demoBars();S.tf=30;S.raw=null;S.demo=true;S.src='';S.srcType='demo';clearInterval(liveTimer);LS.del('tpo.raw');LS.del('tpo.src');LS.del('tpo.srcType');rebuild(true)}
+
+/* ---------- interaction ---------- */
+function zoomAt(f,mx,my){
+  const old=S.view.rowH,nw=Math.max(3,Math.min(40,old*f));if(nw===old)return;
+  const q=S.view.top-(my-HD)/old,cx=S.view.x+mx,ot=S.totalW;
+  S.view.rowH=nw;layout();S.view.top=q+(my-HD)/nw;S.view.x=cx*(S.totalW/ot)-mx;req();
+}
+const ptrs=new Map();let pan=null,pinch=null;
+const pos=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
+cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,pos(e));
+  if(ptrs.size===1){const p=pos(e);pan={x:p.x,y:p.y,sx:p.x,sy:p.y,t:performance.now(),moved:false}}
+  else if(ptrs.size===2){const[a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),mx:(a.x+b.x)/2,my:(a.y+b.y)/2};if(pan)pan.moved=true}});
+cv.addEventListener('pointermove',e=>{if(!ptrs.has(e.pointerId))return;ptrs.set(e.pointerId,pos(e));
+  if(ptrs.size===2&&pinch){const[a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    S.view.x-=mx-pinch.mx;S.view.top+=(my-pinch.my)/S.view.rowH;
+    if(pinch.d>10)zoomAt(d/pinch.d,mx,my);pinch={d,mx,my};req()}
+  else if(ptrs.size===1&&pan){const p=pos(e);S.view.x-=p.x-pan.x;S.view.top+=(p.y-pan.y)/S.view.rowH;pan.x=p.x;pan.y=p.y;
+    if(Math.hypot(p.x-pan.sx,p.y-pan.sy)>7)pan.moved=true;req()}});
+function up(e){if(!ptrs.has(e.pointerId))return;ptrs.delete(e.pointerId);
+  if(ptrs.size===0){if(pan&&!pan.moved&&performance.now()-pan.t<500)tap(pan.sx,pan.sy);pan=null;pinch=null}
+  else if(ptrs.size===1){pinch=null;const p=[...ptrs.values()][0];pan={x:p.x,y:p.y,sx:p.x,sy:p.y,t:0,moved:true}}}
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+function tap(x,y){
+  if(x>cw-AX)return;
+  if(y<HD){const cx=x+S.view.x,d=S.days.find(d=>cx>=d.x-15&&cx<=d.x+d.w+15);
+    if(d){keepView(()=>{S.ov[d.key]=!isSplit(d);if(S.ov[d.key]===(S.set.prof==='split'))delete S.ov[d.key]})}
+    selectAt(x);return}
+  selectAt(x);
+  const r=Math.floor(S.view.top-1-(y-HD)/S.view.rowH);S.selRow=S.selRow===r?null:r;req();
+}
+function selectAt(x){const cx=x+S.view.x;const i=S.days.findIndex(d=>cx>=d.x-15&&cx<=d.x+d.w+15);if(i>=0&&i!==S.sel){S.sel=i;renderInfo()}req()}
+cv.addEventListener('wheel',e=>{e.preventDefault();const p=pos(e);
+  if(e.ctrlKey||e.metaKey){zoomAt(Math.exp(-e.deltaY*.01),p.x,p.y);return}
+  if(e.shiftKey){S.view.x+=e.deltaY}else{S.view.x+=e.deltaX;S.view.top-=e.deltaY/S.view.rowH}req()},{passive:false});
+$('#zIn').onclick=()=>zoomAt(1.25,(cw-AX)/2,HD+(ch-HD)/2);
+$('#zOut').onclick=()=>zoomAt(.8,(cw-AX)/2,HD+(ch-HD)/2);
+$('#goLast').onclick=()=>{fitLast();S.sel=S.days.length-1;renderInfo();req()};
+
+function segs(){
+  for(const[id,key]of[['#segMode','mode'],['#segProf','prof']])
+    for(const b of $(id).querySelectorAll('button'))b.setAttribute('aria-pressed',String(b.dataset.v===S.set[key]));
+}
+for(const[id,key]of[['#segMode','mode'],['#segProf','prof']])
+  $(id).addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.set[key]=b.dataset.v;saveSet();segs();
+    if(key==='prof')keepView(()=>{S.ov={}})
+    req()});
+
+/* sheets */
+const open=id=>{$(id).hidden=false},close=id=>{$(id).hidden=true};
+$('#btnData').onclick=()=>{$('#err').hidden=true;open('#sheetData')};
+$('#btnSet').onclick=()=>open('#sheetSet');
+document.querySelectorAll('.sheet').forEach(s=>{s.addEventListener('click',e=>{if(e.target===s||e.target.closest('[data-close]'))s.hidden=true})});
+const showErr=m=>{const el=$('#err');el.textContent=m;el.hidden=false};
+$('#file').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();
+  rd.onload=()=>{try{loadRaw(String(rd.result),f.name.replace(/\.(csv|txt)$/i,''));close('#sheetData')}catch(err){showErr(err.message)}e.target.value=''};
+  rd.onerror=()=>showErr('Не удалось прочитать файл.');rd.readAsText(f)});
+$('#btnParse').onclick=()=>{const t=$('#paste').value;if(!t.trim()){showErr('Вставьте CSV или выберите файл.');return}
+  try{loadRaw(t,'Вставка');close('#sheetData')}catch(err){showErr(err.message)}};
+$('#btnDemo').onclick=()=>{loadDemo();close('#sheetData')};
+$('#btnBn').onclick=async()=>{const b=$('#btnBn'),er=$('#bnErr');er.hidden=true;b.disabled=true;b.textContent='Загружаю…';
+  S.set.bnDays=+$('#bnDays').value;saveSet();
+  try{await loadBinance(S.set.bnDays);close('#sheetData')}catch(e){er.textContent=bnErrMsg(e);er.hidden=false}
+  b.disabled=false;b.textContent='Загрузить с Binance'};
+
+const sRs=$('#sRs'),sDays=$('#sDays'),sTz=$('#sTz'),sOff=$('#sOff'),sLayout=$('#sLayout'),sMult=$('#sMult');
+function syncSet(){sRs.value=String(S.set.rs);$('#tsSel').value=String(S.set.rs);sDays.value=String(S.set.days);sTz.value=S.set.tz;sOff.value=S.set.off;sLayout.value=S.set.layout;sMult.value=S.set.bnMult;$('#bnDays').value=String(S.set.bnDays)}
+sLayout.onchange=()=>keepView(()=>{S.set.layout=sLayout.value;saveSet()});
+sMult.onchange=()=>{const v=parseFloat(String(sMult.value).replace(',','.'));S.set.bnMult=v>0?v:10;saveSet();renderSrc();if(S.srcType==='binance')keepView(()=>bnApply(false,true))};
+const setTs=v=>keepView(()=>{S.set.rs=+v;saveSet();syncSet();rebuild(false,true)});
+sRs.onchange=()=>setTs(sRs.value);$('#tsSel').onchange=e=>setTs(e.target.value);
+sDays.onchange=()=>keepView(()=>{S.set.days=+sDays.value;saveSet();rebuild(false,true)});
+sTz.onchange=()=>{S.set.tz=sTz.value;saveSet();if(S.raw){try{keepView(()=>loadRaw(S.raw,S.src,false))}catch(e){}}};
+sOff.onchange=()=>{const v=parseFloat(String(sOff.value).replace(',','.'));S.set.off=isFinite(v)?v:0;saveSet();rebuild(false,true)};
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.srcType==='binance'&&S.bn?.length&&Date.now()-S.bnUpd>9e4){
+  bnFetch(S.bn[S.bn.length-1].ms,Date.now()).then(k=>{const m=new Map(S.bn.map(x=>[x.ms,x]));for(const x of k)m.set(x.ms,x);
+    S.bn=[...m.values()].sort((a,b)=>a.ms-b.ms);S.bnUpd=Date.now();bnApply(false,true)}).catch(()=>{})}});
+
+/* theme + resize */
+const mq=matchMedia('(prefers-color-scheme: dark)');
+const retheme=()=>{readColors();renderInfo();req()};
+mq.addEventListener?.('change',retheme);
+new MutationObserver(retheme).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','class']});
+let first=true;
+new ResizeObserver(()=>{size();if(first){first=false;layout();fitLast()}req()}).observe(wrap);
+
+/* boot */
+readColors();segs();syncSet();size();
+const raw=LS.get('tpo.raw');
+if(raw){try{loadRaw(raw,LS.get('tpo.src')||'CSV')}catch(e){loadDemo()}}else loadDemo();
+if(LS.get('tpo.srcType')==='binance')loadBinance(S.set.bnDays).catch(e=>{const el=$('#info');el.insertAdjacentHTML('beforeend',`<div class="note">${bnErrMsg(e)}</div>`)});
+document.fonts?.ready.then(()=>req());
+})();
+</script>
+</body></html>
